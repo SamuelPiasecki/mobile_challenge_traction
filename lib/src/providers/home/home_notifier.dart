@@ -9,7 +9,7 @@ class HomeNotifier extends StateNotifier<HomeState> {
     readCompanies();
   }
 
-  void readCompanies() async {
+  Future<void> readCompanies() async {
     state = HomeState(isLoading: true);
     try {
       List<Company> companies = await readCompaniesUseCase();

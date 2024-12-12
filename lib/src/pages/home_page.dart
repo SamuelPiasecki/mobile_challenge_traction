@@ -16,7 +16,14 @@ class HomePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('TRACTION'),
+        title: const Text(
+          'TRACTION',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: const Color(0xFF2188FF),
         centerTitle: true,
       ),
       body: Padding(
@@ -42,7 +49,7 @@ class HomePage extends ConsumerWidget {
                     final company = state.companies[index];
                     return InkWell(
                       onTap: () {
-                        context.push(RouteLocation.asset, extra: company.id);
+                        context.push(RouteLocation.asset, extra: company);
                       },
                       child: Card(
                         child: Padding(

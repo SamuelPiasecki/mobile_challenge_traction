@@ -6,17 +6,18 @@ import 'package:mobile_challenge_traction/src/domain/usecases/read_companies_use
 import 'package:mobile_challenge_traction/src/providers/home/home_notifier.dart';
 import 'package:mobile_challenge_traction/src/providers/home/home_state.dart';
 
-final companyRepository = Provider<ICompaniesRepository>((ref) {
+final companiesRepository = Provider<ICompaniesRepository>((ref) {
   final client = ref.read(httpClientProvider);
   return CompaniesRepository(client: client);
 });
 
 final readCompaniesUseCase = Provider<ReadCompaniesUseCase>((ref) {
-  final repository = ref.read(companyRepository);
+  final repository = ref.read(companiesRepository);
   return ReadCompaniesUseCase(repository: repository);
 });
 
-final homeNotifierProvider =
-    StateNotifierProvider<HomeNotifier, HomeState>((ref) {
-  return HomeNotifier(readCompaniesUseCase: ref.read(readCompaniesUseCase));
-});
+final homeNotifierProvider = StateNotifierProvider<HomeNotifier, HomeState>(
+  (ref) {
+    return HomeNotifier(readCompaniesUseCase: ref.read(readCompaniesUseCase));
+  },
+);
