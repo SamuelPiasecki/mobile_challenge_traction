@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_challenge_traction/src/data/models/asset.dart';
@@ -23,7 +21,7 @@ class AssetNotifier extends StateNotifier<AssetState> {
     await readLocations(company.id);
     await readAssets(company.id);
     createTree(company);
-    state = state.copyWith(isLoading: false);
+    state = state.copyWith(isLoading: false, company: company);
   }
 
   Future<void> readLocations(String companyId) async {
@@ -103,6 +101,53 @@ class AssetNotifier extends StateNotifier<AssetState> {
     }
   }
 
+  void filterTreeInput(String search) {
+    if (search.isEmpty) {
+      if (state.searchTree != null) {
+        createTree(state.company!);
+      }
+    }
+    if (search.length >= 6) {
+      state = state.copyWith(isLoading: true);
+      TreeNode? path = TreeNode.dfsFindPath(state.root!, search);
+      if (path != null) {
+        state = state.copyWith(isLoading: false, searchTree: path);
+      } else {
+        state = state.copyWith(isLoading: false, error: 'Nó não encontrado!');
+      }
+    }
+  }
+
+  void filterTreeSensorEnergy(bool filter) {
+    if (filter) {
+      state = state.copyWith(isLoading: true);
+      TreeNode? path = TreeNode.dfsFindPathSensorEnergy(state.root!);
+      if (path != null) {
+        state = state.copyWith(isLoading: false, searchTree: path);
+      } else {
+        state = state.copyWith(
+            isLoading: false, error: 'Sensores de energia não encontrados!');
+      }
+    } else {
+      createTree(state.company!);
+    }
+  }
+
+  void filterTreeCritical(bool filter) {
+    if (filter) {
+      state = state.copyWith(isLoading: true);
+      TreeNode? path = TreeNode.dfsFindPathCritical(state.root!);
+      if (path != null) {
+        state = state.copyWith(isLoading: false, searchTree: path);
+      } else {
+        state = state.copyWith(
+            isLoading: false, error: 'Status críticos não encontrados!');
+      }
+    } else {
+      createTree(state.company!);
+    }
+  }
+
   List<TreeSliverNode<dynamic>> convertTree(TreeNode node) {
     return node.children.map((child) {
       return TreeSliverNode<dynamic>(
@@ -111,13 +156,5 @@ class AssetNotifier extends StateNotifier<AssetState> {
         children: convertTree(child),
       );
     }).toList();
-  }
-
-  void printTree(TreeNode node, [int depth = 0]) {
-    String indent = ' ' * depth * 2;
-    log('$indent${node.value.name}');
-    for (TreeNode child in node.children) {
-      printTree(child, depth + 1);
-    }
   }
 }

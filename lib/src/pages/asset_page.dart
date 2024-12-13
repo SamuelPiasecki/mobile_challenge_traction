@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_challenge_traction/src/data/models/asset.dart';
 import 'package:mobile_challenge_traction/src/data/models/company.dart';
 import 'package:mobile_challenge_traction/src/providers/asset/asset_provider.dart';
+import 'package:mobile_challenge_traction/src/providers/asset/asset_state.dart';
 import 'package:mobile_challenge_traction/src/utils/helpers.dart';
 
 class AssetPage extends ConsumerStatefulWidget {
@@ -31,13 +32,32 @@ class _AssetPageState extends ConsumerState<AssetPage> {
   List<TreeSliverNode<dynamic>> tree = [];
   bool sensorEnergy = false;
   bool critical = false;
+  final TextEditingController _controller = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(assetNotifierProvider.notifier).readData(widget.company);
+      _controller.addListener(_filterSearchInput);
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_filterSearchInput);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _filterSearchInput() {
+    if (_controller.text.isEmpty) {
+      ref.read(assetNotifierProvider.notifier).filterTreeInput('');
+    } else {
+      ref
+          .read(assetNotifierProvider.notifier)
+          .filterTreeInput(_controller.text);
+    }
   }
 
   Widget _treeNodeBuilder(
@@ -123,8 +143,32 @@ class _AssetPageState extends ConsumerState<AssetPage> {
     final state = ref.watch(assetNotifierProvider);
     final notifier = ref.watch(assetNotifierProvider.notifier);
 
+    ref.listen<AssetState>(assetNotifierProvider, (previous, next) {
+      if (next.searchTree != null) {
+        setState(() {
+          tree = notifier.convertTree(next.searchTree!);
+        });
+      }
+
+      if (previous?.searchTree != null && next.searchTree == null) {
+        setState(() {
+          tree = notifier.convertTree(next.root!);
+        });
+      }
+
+      if (previous?.error != next.error) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next.error ?? 'Erro desconhecido')),
+          );
+        });
+      }
+    });
+
     if (state.root != null) {
-      tree = notifier.convertTree(state.root!);
+      setState(() {
+        tree = notifier.convertTree(state.root!);
+      });
     }
 
     return Scaffold(
@@ -143,8 +187,9 @@ class _AssetPageState extends ConsumerState<AssetPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const TextField(
-              decoration: InputDecoration(
+            TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
                 icon: Icon(Icons.search),
                 hintText: 'Busque por Ativo ou Local',
               ),
@@ -158,6 +203,7 @@ class _AssetPageState extends ConsumerState<AssetPage> {
                       setState(() {
                         sensorEnergy = !sensorEnergy;
                       });
+                      notifier.filterTreeSensorEnergy(sensorEnergy);
                     },
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all(
@@ -181,6 +227,7 @@ class _AssetPageState extends ConsumerState<AssetPage> {
                       setState(() {
                         critical = !critical;
                       });
+                      notifier.filterTreeCritical(critical);
                     },
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all(
@@ -203,10 +250,6 @@ class _AssetPageState extends ConsumerState<AssetPage> {
             if (state.isLoading)
               const Center(
                 child: CircularProgressIndicator(),
-              ),
-            if (!state.isLoading && state.error != null)
-              Center(
-                child: Text(state.error.toString()),
               ),
             if (!state.isLoading &&
                 state.locations != null &&

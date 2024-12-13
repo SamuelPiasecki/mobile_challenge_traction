@@ -12,4 +12,14 @@ class Helpers {
       return 'lib/src/assets/component.png';
     }
   }
+
+  static displaySnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+        ),
+      ),
+    );
+  }
 }
